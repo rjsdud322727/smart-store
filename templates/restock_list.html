@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>발주 품목 리스트</title>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* 스타일 추가 */
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>발주 품목 리스트</h1>
+    <section id="restock-order-section">
+       
+        <button id="check-restock-list-btn">발주 리스트 확인하기</button>
+    </section>
+    <table id="restock-table">
+        <thead>
+            <tr>
+                <th>선택</th>
+                <th>제품명</th>
+                <th>가격</th>
+                <th>수량</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- JS로 데이터가 들어감 -->
+        </tbody>
+    </table>
+    <button id="generate-restock-excel-btn">엑셀 파일 만들기</button>
+
+    <script>
+        $(document).ready(function() {
+            // 입고할 제품 리스트 가져오기
+            fetchRestockList();
+
+            // 엑셀 파일 생성 버튼 클릭
+            $(document).on('click', '#generate-restock-excel-btn', function() {
+                // 체크된 제품만 수집
+                const selectedProducts = [];
+                $('#restock-table tbody tr').each(function() {
+                    const checkbox = $(this).find('.restock-checkbox');
+                    if (checkbox.is(':checked')) {
+                        selectedProducts.push({
+                            barcode: checkbox.data('barcode'),
+                            name: $(this).find('td').eq(1).text(),
+                            price: parseInt($(this).find('td').eq(2).text().replace(' 원', '')) || 0,
+                            quantity: parseInt($(this).find('td').eq(3).text()) || 0
+                        });
+                    }
+                });
+
+                if (selectedProducts.length === 0) {
+                    alert('입고할 제품을 선택하세요.');
+                    return;
+                }
+
+                $.ajax({
+                    url: '/api/check_and_generate_restock_excel',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({products: selectedProducts}),
+                    success: function(response) {
+                        alert(response.message);
+                    },
+                    error: function() {
+                        alert('엑셀 파일 생성 중 오류 발생');
+                    }
+                });
+            });
+        });
+
+        function fetchRestockList() {
+            $.get('/api/get_restock_list', function(data) {
+                console.log(data); // API 응답 확인
+                const restockTableBody = $('#restock-table tbody');
+                restockTableBody.empty(); // 테이블 내용 지우기
+
+                if (data.length > 0) {
+                    data.forEach(product => {
+                        // 제품명, 가격, 수량이 정의되어 있는지 확인
+                        const productName = product.name || '정보 없음';
+                        const productPrice = (product.price !== undefined && product.price !== null) ? `${product.price} 원` : '정보 없음';
+                        const productQuantity = (product.quantity !== undefined && product.quantity !== null) ? product.quantity : '정보 없음';
+
+                        // 테이블에 제품명, 가격, 수량 추가
+                        restockTableBody.append(`
+                            <tr>
+                                <td><input type="checkbox" class="restock-checkbox" data-barcode="${product.barcode || ''}" checked></td>
+                                <td>${productName}</td>
+                                <td>${productPrice}</td>
+                                <td>${productQuantity}</td>
+                            </tr>
+                        `);
+                    });
+                } else {
+                    restockTableBody.append('<tr><td colspan="3" style="text-align:center;">입고할 제품이 없습니다.</td></tr>');
+                }
+            }).fail(function() {
+                alert('입고할 주문 리스트를 가져오는 데 실패했습니다.');
+            });
+        }
+    </script>
+</body>
+</html>

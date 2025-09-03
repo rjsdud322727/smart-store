@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>유통기한 관리 대시보드</title>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #00A652;
+            --secondary-color: #008542;
+            --accent-color: #FF6B00;
+            --text-color: #333;
+            --bg-color: #f8f9fa;
+            --white: #ffffff;
+            --gray-100: #f8f9fa;
+            --gray-200: #e9ecef;
+            --gray-300: #dee2e6;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .top-nav {
+            background: var(--white);
+            padding: 0.5rem 2rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .top-nav ul {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1.5rem;
+            list-style: none;
+        }
+
+        .top-nav a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        header {
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 2rem 0;
+            position: relative;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .header-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            text-align: center;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            color: var(--text-color);
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        section {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+        }
+
+        h2 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        h2 i {
+            color: var(--accent-color);
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        li {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        li:hover {
+            background-color: var(--gray-100);
+        }
+
+        li:last-child {
+            border-bottom: none;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        input {
+            padding: 1rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 166, 82, 0.1);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .top-nav {
+                padding: 0.5rem 1rem;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+
+            main {
+                padding: 0 1rem;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <ul>
+          
+            <li>
+                <button onclick="location.href='/barcode'" style="background:none; border:none; color:#333; font-size:0.9rem; cursor:pointer;">리스트</button>
+            </li>
+
+        </ul>
+    </nav>
+    <header>
+        <div class="header-content">
+            <h1>유통기한 관리 대시보드</h1>
+            <p class="header-subtitle">효율적인 재고 관리를 시작하세요</p>
+        </div>
+    </header>
+  
+    <main>
+       
+        </section>
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="total-products">0</div>
+                <div class="stat-label">총 제품 수</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="expiring-soon">0</div>
+                <div class="stat-label">임박 제품</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="expired">0</div>
+                <div class="stat-label">폐기 필요</div>
+            </div>
+        </div>
+        <div class="content-grid">
+            <section id="product-list">
+                <h2><i class="fas fa-clock"></i>폐기물품목록</h2>
+                <button id="discard-all-btn">폐기 완료</button>
+                <table id="barcode-table">
+                    <thead>
+                        <tr>
+                            <th>제품명</th>
+                            <th>유통기한</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- JS로 데이터가 들어감 -->
+                    </tbody>
+                </table>
+            </section>
+            <section id="discard-list">
+                <h2>유통기한 임박 제품 목록</h2>
+                <ul id="discard-items">
+                    <!-- 유통기한 임박 제품이 여기에 추가됩니다 -->
+                </ul>
+            </section>
+
+            <section id="excel-upload-section">
+                <h2><i class="fas fa-file-excel"></i>엑셀로 대량 입고</h2>
+                <form id="excel-upload-form" enctype="multipart/form-data">
+                    <input type="file" id="excel-file" name="file" accept=".xlsx,.xls,.csv" required>
+                    <button type="submit">엑셀 업로드</button>
+                </form>
+            </section>
+
+            <section id="receipt-section">
+                <h2><i class="fas fa-receipt"></i>영수증 조회</h2>
+                <button id="view-receipts-btn" onclick="location.href='/receipts'">영수증 조회</button>
+            </section>
+
+            <section id="restock-order-section">
+                <h2><i class="fas fa-file-excel"></i>발주 리스트</h2>
+                <button id="check-restock-list-btn">발주 리스트 확인하기</button>
+               
+                <ul id="restock-list" style="display: none;">
+                    <!-- 입고할 주문 리스트가 여기에 추가됩니다 -->
+                </ul>
+            </section>
+
+            <section id="sales-statistics-section">
+                <h2><i class="fas fa-chart-line"></i>판매 통계</h2>
+                <button id="view-sales-stats-btn">판매 통계 보기</button>
+                <canvas id="salesChart" style="max-width: 600px; margin: auto;"></canvas>
+            </section>
+        </div>
+    </main>
+    <script>
+        $(function() {
+            $("#product-expiration").datepicker({
+                dateFormat: 'yy-mm-dd',
+                showOtherMonths: true,
+                selectOtherMonths: true,
+                monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+                dayNamesMin: ['일', '월', '화', '수', '목', '금', '토'],
+                showMonthAfterYear: true,
+                yearSuffix: '년'
+            });
+
+            let products = [];
+            const productItems = $('#product-items');
+            const discardItems = $('#discard-items');
+            const inventoryForm = $('#inventory-form');
+            const productNameInput = $('#product-name');
+            const productExpirationInput = $('#product-expiration');
+            const productBarcodeInput = $('#product-barcode');
+
+            function updateStats() {
+                const today = new Date().toISOString().split('T')[0];
+                const expired = products.filter(p => p.expiration < today).length;
+                const expiringSoon = products.filter(p => p.expiration >= today).length;
+                
+                $('#total-products').text(products.length);
+                $('#expiring-soon').text(expiringSoon);
+                $('#expired').text(expired);
+            }
+
+            function updateProductLists() {
+                productItems.empty(); // 기존 항목을 지웁니다
+
+                products.forEach(product => {
+                    const expirationStr = product.EXPIRATION_DATE ? product.EXPIRATION_DATE.slice(0, 10) : '';
+                    if (!expirationStr) return;
+
+                    const li = $('<li class="product-item" data-barcode="${product.BARCODE}">').text(`${product.BARCODE} - ${product.PRODUCT_NAME} - 유통기한: ${expirationStr} (수량: ${product.QUANTITY}, 가격: ${product.PRICE})`);
+                    productItems.append(li); // 제품 목록에 추가
+                });
+                updateStats(); // 통계 업데이트
+            }
+
+            function fetchProducts() {
+                $.get('/api/products', function(data) {
+                    const tbody = $('#barcode-table tbody');
+                    tbody.empty();
+                    $('#total-products').text(data.length); // 총 제품 수 업데이트
+                    if (data.length === 0) {
+                        tbody.append('<tr><td colspan="5" style="color:#888;">상품이 없습니다.</td></tr>');
+                        return;
+                    }
+                    data.forEach(product => {
+                        tbody.append(`
+                            <tr>
+                                <td>${product.barcode}</td>
+                                <td>${product.name}</td>
+                                <td>${product.expiration_date ? product.expiration_date.slice(0,10) : ''}</td>
+                                <td>${product.quantity}</td>
+                                <td>${product.price}</td>
+                            </tr>
+                        `);
+                    });
+                }).fail(function() {
+                    alert('제품 데이터를 가져오는 데 실패했습니다.');
+                });
+            }
+
+            function fetchAlertProducts() {
+                $.get('/products/alerts', function(data) {
+                    const alertItems = $('#discard-items');
+                    alertItems.empty(); // 기존 항목 지우기
+                    if (data.length === 0) {
+                        alertItems.append('<li>유통기한 임박 제품이 없습니다.</li>');
+                        $('#expiring-soon').text(0); // 개수 업데이트
+                        return;
+                    }
+                    let count = 0; // 임박 제품 개수 카운트
+                    data.forEach(product => {
+                        const expirationDate = new Date(product.expiration_date);
+                        const today = new Date();
+                        const daysLeft = Math.ceil((expirationDate - today) / (1000 * 60 * 60 * 24)); // 남은 일수 계산
+
+                        // 유통기한이 3일 이내로 남은 경우에만 표시
+                        if (daysLeft > 0 && daysLeft <= 3) {
+                            const li = $('<li>').text(`${product.name} - 유통기한: ${product.expiration_date} (남은 일수: ${daysLeft}일) - 할인율: ${product.discount || '없음'}`); // 할인율 추가
+                            alertItems.append(li); // 유통기한 임박 제품 목록에 추가
+                            count++; // 개수 증가
+                        }
+                    });
+                    $('#expiring-soon').text(count); // 개수 업데이트
+                }).fail(function() {
+                    alert('유통기한 임박 제품 데이터를 가져오는 데 실패했습니다.');
+                });
+            }
+
+            function fetchExpiredProducts() {
+                $.get('/products/expired', function(data) {
+                    const expiredItems = $('#barcode-table tbody');
+                    expiredItems.empty(); // 기존 항목 지우기
+                    if (data.length === 0) {
+                        expiredItems.append('<tr><td colspan="2" style="color:#888;">유통기한이 지난 제품이 없습니다.</td></tr>');
+                        $('#expired').text(0); // 개수 업데이트
+                        return;
+                    }
+                    let count = 0; // 폐기해야 할 물품 개수 카운트
+                    data.forEach(product => {
+                        const expirationDate = new Date(product.expiration_date);
+                        if (expirationDate < new Date()) { // 현재 날짜보다 유통기한이 지난 경우
+                            expiredItems.append(`
+                                <tr>
+                                    <td>${product.name || ''}</td>
+                                    <td>${expirationDate.toLocaleDateString() || ''}</td>
+                                </tr>
+                            `); // 유통기한이 지난 제품 목록에 추가
+                            count++; // 개수 증가
+                        }
+                    });
+                    $('#expired').text(count); // 개수 업데이트
+                }).fail(function() {
+                    alert('유통기한이 지난 제품 데이터를 가져오는 데 실패했습니다.');
+                });
+            }
+
+            function fetchReceipts() {
+                $.get('/api/recent_purchases', function(data) {
+                    const receiptItems = $('#receipt-items');
+                    receiptItems.empty(); // 기존 항목 지우기
+                    if (data.length === 0) {
+                        receiptItems.append('<tr><td colspan="5" style="color:#888;">영수증이 없습니다.</td></tr>');
+                        return;
+                    }
+                    data.forEach(purchase => {
+                        receiptItems.append(`
+                            <tr>
+                                <td>${purchase.barcode}</td>
+                                <td>${purchase.name}</td>
+                                <td>${new Date().toLocaleString()}</td> // 현재 날짜를 구매 날짜로 사용
+                                <td>1</td> // 수량은 항상 1로 설정
+                                <td>${purchase.price}</td>
+                            </tr>
+                        `);
+                    });
+                }).fail(function() {
+                    alert('영수증 데이터를 가져오는 데 실패했습니다.');
+                });
+            }
+
+            inventoryForm.on('submit', function(event) {
+                event.preventDefault();
+                const newProduct = {
+                    name: productNameInput.val(),
+                    expiration: productExpirationInput.val(),
+                    barcode: productBarcodeInput.val()
+                };
+                $.ajax({
+                    url: '/api/add_product',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(newProduct),
+                    success: function(response) {
+                        alert(response.message);
+                        fetchProducts(); // 제품 추가 후 테이블 업데이트
+                        fetchExpiredProducts(); // 유통기한이 지난 제품 목록 업데이트
+                        productNameInput.val('');
+                        productExpirationInput.val('');
+                        productBarcodeInput.val('');
+                    }
+                });
+            });
+
+            $('#excel-upload-form').on('submit', function(e) {
+                e.preventDefault();
+                var formData = new FormData(this);
+                $.ajax({
+                    url: '/api/upload_excel',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(res) {
+                        alert(res.message);
+                        fetchProducts(); // 제품 목록 업데이트
+                        fetchAlertProducts(); // 유통기한 임박 제품 목록 업데이트
+                        fetchExpiredProducts(); // 유통기한이 지난 제품 목록 업데이트
+                    },
+                    error: function(err) {
+                        alert('엑셀 파일 업로드 중 오류 발생');
+                    }
+                });
+            });
+
+            $(document).on('click', '.discard-btn', function() {
+                const productId = $(this).closest('li').data('id'); // 제품 ID 가져오기
+
+                // AJAX 요청으로 서버에 삭제 요청
+                $.ajax({
+                    url: `/api/discard_product/${productId}`, // 삭제 API 엔드포인트
+                    method: 'DELETE',
+                    success: function(response) {
+                        alert(response.message);
+                        // 목록에서 해당 제품 제거
+                        $(this).closest('li').remove();
+                    }.bind(this), // this 바인딩
+                    error: function(err) {
+                        alert('제품 삭제 중 오류 발생');
+                    }
+                });
+            });
+
+            $(document).on('click', '#discard-all-btn', function() {
+                // 테이블에서 폐기할 바코드 목록 수집
+                const barcodes = [];
+                $('#barcode-table tbody tr').each(function() {
+                    const barcode = $(this).find('td').eq(0).text();
+                    if (barcode) barcodes.push(barcode);
+                });
+
+                if (barcodes.length === 0) {
+                    alert('폐기할 제품이 없습니다.');
+                    return;
+                }
+
+                if (!confirm('정말로 모든 폐기 대상 제품을 삭제하시겠습니까?')) return;
+
+                $.ajax({
+                    url: '/api/discard_products',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({barcodes}),
+                    success: function(res) {
+                        alert(res.message);
+                        fetchExpiredProducts(); // 목록 새로고침
+                    },
+                    error: function() {
+                        alert('폐기 처리 중 오류 발생');
+                    }
+                });
+            });
+
+            $(document).on('click', '.product-item', function() {
+                const barcode = $(this).data('barcode'); // 클릭한 제품의 바코드 가져오기
+                $.get(`/api/products/${barcode}`, function(data) {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    // 데이터가 정상적으로 반환되면, HTML 요소에 데이터 표시
+                    $('#product-name').text(data.name);
+                    $('#product-expiration').text(data.expiration_date);
+                    $('#product-quantity').text(data.quantity);
+                    $('#product-price').text(data.price);
+                });
+            });
+
+            $(document).on('click', '#view-receipts-btn', function() {
+                $.get('/api/recent_purchases', function(data) {
+                    const receiptItems = $('#receipt-items');
+                    receiptItems.empty(); // 기존 항목 지우기
+                    if (data.length === 0) {
+                        receiptItems.append('<tr><td colspan="5" style="color:#888;">영수증이 없습니다.</td></tr>');
+                        return;
+                    }
+                    data.forEach(purchase => {
+                        receiptItems.append(`
+                            <tr>
+                                <td>${purchase.barcode}</td>
+                                <td>${purchase.name}</td>
+                                <td>${new Date().toLocaleString()}</td> // 현재 날짜를 구매 날짜로 사용
+                                <td>1</td> // 수량은 항상 1로 설정
+                                <td>${purchase.price}</td>
+                            </tr>
+                        `);
+                    });
+                }).fail(function() {
+                    alert('영수증 데이터를 가져오는 데 실패했습니다.');
+                });
+            });
+
+            $(document).on('click', '#check-restock-list-btn', function() {
+                window.location.href = '/restock_list'; // 새로운 페이지로 이동
+            });
+
+            $(document).on('click', '#generate-restock-excel-btn', function() {
+                $.post('/api/generate_restock_excel', function(response) {
+                    alert(response.message);
+                }).fail(function(jqXHR) {
+                    alert('엑셀 파일 생성 중 오류 발생: ' + jqXHR.responseJSON.error);
+                });
+            });
+
+            $(document).ready(function() {
+                // AI 구매 API 호출
+                $.post('/api/ai_purchase', function(response) {
+                    console.log(response.message); // AI 구매 메시지 출력
+                }).fail(function() {
+                    alert('AI 구매 처리 중 오류 발생');
+                });
+
+                fetchProducts(); // 총 제품 수 가져오기
+                fetchAlertProducts(); // 유통기한 임박 제품 목록 가져오기
+                fetchExpiredProducts(); // 유통기한이 지난 제품 목록 가져오기
+                fetchReceipts(); // 영수증 목록 가져오기
+            });
+
+            $(document).on('click', '#view-sales-stats-btn', function() {
+                window.location.href = '/sales_statistics'; // 새로운 페이지로 이동
+            });
+        });
+    </script>
+</body>
+</html>

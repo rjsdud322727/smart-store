@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>영수증 조회</title>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            padding: 20px;
+        }
+        .receipt {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .total {
+            font-weight: bold;
+            font-size: 1.2em;
+            text-align: right;
+        }
+        .receipt-item {
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+        }
+        .receipt-time {
+            font-weight: bold;
+        }
+        .receipt-details {
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <h1>영수증 조회</h1>
+        <div id="receipt-list">
+            <!-- 영수증 항목이 여기에 채워집니다 -->
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // 영수증 데이터 가져오기
+            fetchReceipts();
+
+            // 페이지 새로고침 시 AI 구매 자동 실행
+            $.post('/api/ai_purchase', function(response) {
+                console.log(response.message); // AI 구매 메시지 출력
+                fetchReceipts(); // 영수증 목록 업데이트
+            }).fail(function() {
+                alert('AI 구매 처리 중 오류 발생');
+            });
+        });
+
+        function fetchReceipts() {
+            $.get('/api/recent_purchases', function(data) {
+                const receiptList = $('#receipt-list');
+                receiptList.empty(); // 기존 항목 지우기
+                if (data.length === 0) {
+                    receiptList.append('<div style="color:#888;">영수증이 없습니다.</div>');
+                    return;
+                }
+                data.forEach(purchase => {
+                    const purchaseDate = new Date(purchase.purchase_date).toLocaleString(); // 구매 날짜 포맷
+                    receiptList.append(`
+                        <div class="receipt-item">
+                            <div class="receipt-time" style="float: left; width: 30%;">${purchaseDate}</div>
+                            <div class="receipt-details" style="float: right; width: 65%;">
+                                <div>바코드: ${purchase.barcode}</div>
+                                <div>제품명: ${purchase.name}</div>
+                                <div>가격: ${purchase.price}</div>
+                                <div>할인율: ${purchase.discount || '없음'}</div>
+                            </div>
+                            <div style="clear: both;"></div>
+                        </div>
+                    `);
+                });
+            }).fail(function() {
+                alert('영수증 데이터를 가져오는 데 실패했습니다.');
+            });
+        }
+    </script>
+</body>
+</html>

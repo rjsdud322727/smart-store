@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>판매 통계</title>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            padding: 20px;
+        }
+        .chart-container {
+            max-width: 1500px;
+            margin: auto;
+        }
+        canvas {
+            width: 100% !important;
+            height: 600px !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>판매 통계</h1>
+    <div class="chart-container">
+        <canvas id="salesChart"></canvas>
+    </div>
+
+    <div class="recommendations-container" style="max-width: 1500px; margin: 20px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2>AI 입고 추천</h2>
+        <div id="ai-recommendations" style="margin-top: 20px;">
+            <div class="recommendations" style="margin-bottom: 30px;">
+                <h3>입고 추천 상품</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa;">
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">상품명</th>
+                            <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">현재 재고</th>
+                            <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">일평균 판매</th>
+                            <th style="padding: 12px; text-align: right; border-bottom: 2px solid #dee2e6;">추천 입고량</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recommendations-body">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="explanation" style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px;">
+                <h3>AI 분석 설명</h3>
+                <p id="ai-explanation" style="line-height: 1.6; white-space: pre-line;"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // 영수증 데이터 가져오기
+            fetchSalesData();
+
+            function fetchSalesData() {
+                $.get('/api/recent_purchases', function(data) {
+                    const labels = Array.from({ length: 31 }, (_, i) => i + 1);
+                    const dailyRevenue = new Array(31).fill(0); // 각 날짜별 수익
+                    // 1. 각 날짜별 수익 합산
+                    data.forEach(item => {
+                        const purchaseDate = new Date(item.purchase_date);
+                        const day = purchaseDate.getDate();
+                        const revenue = item.price || 0;
+                        dailyRevenue[day - 1] += revenue;
+                    });
+
+                    // 2. 누적 수익 계산
+                    const cumulativeRevenue = [];
+                    let sum = 0;
+                    for (let i = 0; i < dailyRevenue.length; i++) {
+                        sum += dailyRevenue[i];
+                        cumulativeRevenue.push(sum);
+                    }
+
+                    const ctx = document.getElementById('salesChart').getContext('2d');
+                    const salesChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: '누적 구매 수익',
+                                data: cumulativeRevenue,
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 2,
+                                fill: false,
+                                pointRadius: 3,
+                                pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                                tension: 0 // 꺾은선(스텝) 그래프
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }).fail(function() {
+                    alert('영수증 데이터를 가져오는 데 실패했습니다.');
+                });
+            }
+
+            // AI 추천 데이터 가져오기
+            function fetchAIRecommendations() {
+                $.get('/api/daily_best_sellers', function(data) {
+                    // 추천 상품 표시
+                    const recommendationsBody = $('#recommendations-body');
+                    recommendationsBody.empty();
+                    data.recommendations.forEach(item => {
+                        recommendationsBody.append(`
+                            <tr>
+                                <td style="padding: 12px; border-bottom: 1px solid #dee2e6;">${item.name}</td>
+                                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #dee2e6;">${item.current_stock}개</td>
+                                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #dee2e6;">${item.daily_avg_sales}개</td>
+                                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #dee2e6;">${item.recommended_quantity}개</td>
+                            </tr>
+                        `);
+                    });
+                    
+                    // AI 설명 표시
+                    $('#ai-explanation').text(data.explanation);
+                }).fail(function() {
+                    alert('AI 추천 데이터를 가져오는 데 실패했습니다.');
+                });
+            }
+            
+            // 페이지 로드 시 AI 추천 데이터 가져오기
+            fetchAIRecommendations();
+            
+            // 1시간마다 데이터 새로고침
+            setInterval(fetchAIRecommendations, 3600000);
+        });
+    </script>
+</body>
+</html>

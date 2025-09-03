@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>바코드 목록</title>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f8f9fa; }
+        table { width: 80%; margin: 2rem auto; border-collapse: collapse; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05);}
+        th, td { padding: 1rem; border-bottom: 1px solid #e9ecef; text-align: center; }
+        th { background: #00A652; color: #fff; }
+        tr:last-child td { border-bottom: none; }
+        h1 { text-align: center; margin-top: 2rem; color: #00A652; }
+    </style>
+</head>
+<body>
+    <h1>바코드 상품 목록</h1>
+    <table id="barcode-table">
+        <thead>
+            <tr>
+                <th>바코드</th>
+                <th>제품명</th>
+                <th>유통기한</th>
+                <th>수량</th>
+                <th>가격</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- JS로 데이터가 들어감 -->
+        </tbody>
+    </table>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(function() {
+            $.get('/api/products', function(data) {
+                const tbody = $('#barcode-table tbody');
+                tbody.empty();
+                if (data.length === 0) {
+                    tbody.append('<tr><td colspan="5" style="color:#888;">상품이 없습니다.</td></tr>');
+                    return;
+                }
+                data.forEach(product => {
+                    tbody.append(`
+                        <tr>
+                            <td>${product.barcode}</td>
+                            <td>${product.name}</td>
+                            <td>${product.expiration_date ? product.expiration_date.slice(0,10) : ''}</td>
+                            <td>${product.quantity}</td>
+                            <td>${product.price}</td>
+                        </tr>
+                    `);
+                });
+            });
+        });
+
+        $('#barcode-btn').on('click', function(e) {
+            e.preventDefault();
+            window.location.href = '/barcode';
+        });
+    </script>
+</body>
+</html>
